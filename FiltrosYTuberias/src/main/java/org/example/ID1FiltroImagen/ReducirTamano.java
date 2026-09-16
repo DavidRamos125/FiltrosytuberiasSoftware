@@ -4,10 +4,12 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 
 public class ReducirTamano {
-    public static BufferedImage procesar(BufferedImage imagen) {
-
-        int nuevoAncho = imagen.getWidth() / 2;
-        int nuevoAlto = imagen.getHeight() / 2;
+    public static BufferedImage procesar(BufferedImage imagen, float tamano) {
+        if (tamano <= 0.0 || tamano > 1.0) {
+            return imagen;
+        }
+        int nuevoAncho = (int)(imagen.getWidth() * tamano);
+        int nuevoAlto = (int)(imagen.getHeight() * tamano);
 
         BufferedImage resultado = new BufferedImage(
                 nuevoAncho,

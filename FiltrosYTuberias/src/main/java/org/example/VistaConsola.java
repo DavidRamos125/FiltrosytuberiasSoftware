@@ -8,9 +8,6 @@ import org.example.ID5PersistirEnBaseDeDatos.PersistirEnBaseDeDatos;
 import org.example.interfaz.Filtro;
 import org.example.tuberia.Tuberia;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.Scanner;
 
 public class VistaConsola {
@@ -87,10 +84,7 @@ public class VistaConsola {
 
         for (int i = 0; i < filtrosDisponibles.length; i++) {
 
-            System.out.println(
-                    (i + 1) + ". " +
-                            filtrosDisponibles[i].toString()
-            );
+            System.out.println((i + 1) + ". " + filtrosDisponibles[i].toString());
         }
     }
 
@@ -109,10 +103,7 @@ public class VistaConsola {
 
         tuberia.agregarFiltro(filtro);
 
-        System.out.println(
-                "Filtro agregado: " +
-                        filtro.getClass().getSimpleName()
-        );
+        System.out.println("Filtro agregado: " + filtro);
     }
 
     private static void mostrarTuberia() {
@@ -128,12 +119,7 @@ public class VistaConsola {
         int posicion = 1;
 
         for (Filtro filtro : tuberia.getFiltros()) {
-
-            System.out.println(
-                    posicion + ". " +
-                            filtro.toString()
-            );
-
+            System.out.println(posicion + ". " + filtro);
             posicion++;
         }
     }
@@ -144,58 +130,24 @@ public class VistaConsola {
             System.out.println("No hay filtros seleccionados.");
             return;
         }
+        String ruta = solicitarRuta();
+        tuberia.ejecutar(ruta);
+    }
+
+    private static String solicitarRuta() {
 
         System.out.print("Ingrese la ruta del archivo: ");
-        String ruta = scanner.nextLine();
-
-        try {
-            File resultado = tuberia.ejecutar(ruta);
-            File carpetaResultados = new File("resultados");
-            if (!carpetaResultados.exists()) {
-                carpetaResultados.mkdirs();
-            }
-            System.out.println("Archivo resultado: " + resultado.getName());
-            File destino = new File(
-                    carpetaResultados,
-                    resultado.getName()
-            );
-
-            Files.copy(
-                    resultado.toPath(),
-                    destino.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING
-            );
-
-            System.out.println();
-            System.out.println("Tubería ejecutada correctamente.");
-            System.out.println("Resultado guardado en:");
-            System.out.println(destino.getAbsolutePath());
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error al ejecutar la tubería: " +
-                            e.getMessage()
-            );
-        }
+        return scanner.nextLine();
     }
 
     private static int leerEntero(String mensaje) {
         while (true) {
-
             try {
-
                 System.out.print(mensaje);
-
-                return Integer.parseInt(
-                        scanner.nextLine()
-                );
+                return Integer.parseInt(scanner.nextLine());
 
             } catch (NumberFormatException e) {
-
-                System.out.println(
-                        "Debe ingresar un número."
-                );
+                System.out.println("Debe ingresar un número.");
             }
         }
     }
