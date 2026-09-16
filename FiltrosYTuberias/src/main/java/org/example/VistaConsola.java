@@ -84,7 +84,7 @@ public class VistaConsola {
 
         for (int i = 0; i < filtrosDisponibles.length; i++) {
 
-            System.out.println((i + 1) + ". " + filtrosDisponibles[i].toString());
+            System.out.println((i + 1) + ". " + filtrosDisponibles[i]);
         }
     }
 
