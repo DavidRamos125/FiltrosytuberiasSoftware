@@ -1,6 +1,7 @@
 package org.example.ID5PersistirEnBaseDeDatos;
 
 import org.example.interfaz.Filtro;
+import org.example.util.Property;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -15,9 +16,9 @@ import java.util.List;
 
 public class PersistirEnBaseDeDatos implements Filtro {
 
-    private static final String URL_BD = "jdbc:h2:./data/filtros_db;AUTO_SERVER=TRUE";
-    private static final String USUARIO = "sa";
-    private static final String CLAVE = "";
+    private static final String URL_BD = Property.getPropertyString("db.url");
+    private static final String USUARIO = Property.getPropertyString("db.usuario");
+    private static final String CLAVE = Property.getPropertyString("db.clave");
 
     static {
         crearTablaSiNoExiste();
