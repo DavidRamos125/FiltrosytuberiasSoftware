@@ -14,7 +14,7 @@ public class EncriptarTextoSHA256 implements Filtro {
     @Override
     public File procesar(String ruta) {
         if (ruta == null || ruta.isBlank()) {
-            System.out.println("La ruta no puede estar vacía.");
+            System.err.println("La ruta no puede estar vacía.");
             return null;
         }
         return procesar(new File(ruta));
@@ -24,7 +24,7 @@ public class EncriptarTextoSHA256 implements Filtro {
     public File procesar(File archivoODirectorio) {
 
         if (archivoODirectorio == null || !archivoODirectorio.exists()) {
-            System.out.println("El archivo o directorio no existe.");
+            System.err.println("El archivo o directorio no existe.");
             return null;
         }
 
@@ -40,7 +40,7 @@ public class EncriptarTextoSHA256 implements Filtro {
         File[] archivos = directorio.listFiles(File::isFile);
 
         if (archivos == null || archivos.length == 0) {
-            System.out.println("El directorio no contiene archivos para procesar.");
+            System.err.println("El directorio no contiene archivos para procesar.");
             return directorio;
         }
 
@@ -57,7 +57,7 @@ public class EncriptarTextoSHA256 implements Filtro {
     private File procesarArchivo(File archivo) {
 
         if (archivo == null || !archivo.exists() || !archivo.isFile()) {
-            System.out.println("El archivo no existe o no es válido.");
+            System.err.println("El archivo no existe o no es válido.");
             return null;
         }
 
@@ -78,15 +78,15 @@ public class EncriptarTextoSHA256 implements Filtro {
                 writer.write(hashHexadecimal);
             }
 
-            System.out.println("Hash generado: " + archivoSalida.getAbsolutePath());
+            System.err.println("Hash generado: " + archivoSalida.getAbsolutePath());
 
             return archivoSalida;
 
         } catch (IOException e) {
-            System.out.println("Error al leer o escribir el archivo: " + e.getMessage());
+            System.err.println("Error al leer o escribir el archivo: " + e.getMessage());
             return null;
         } catch (NoSuchAlgorithmException e) {
-            System.out.println("No se encontró el algoritmo SHA-256.");
+            System.err.println("No se encontró el algoritmo SHA-256.");
             return null;
         }
     }

@@ -4,11 +4,14 @@ import org.example.interfaz.Filtro;
 import org.example.util.Property;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -19,6 +22,7 @@ public class PersistirEnBaseDeDatos implements Filtro {
     private static final String URL_BD = Property.getPropertyString("db.url");
     private static final String USUARIO = Property.getPropertyString("db.usuario");
     private static final String CLAVE = Property.getPropertyString("db.clave");
+    private static final String CARPETA_DESCARGADOS = "./descargados";
 
     static {
         crearTablaSiNoExiste();
@@ -30,7 +34,8 @@ public class PersistirEnBaseDeDatos implements Filtro {
                 "NOMBRE VARCHAR(500), " +
                 "RUTA_ABSOLUTA VARCHAR(1000), " +
                 "TAMANO_BYTES BIGINT, " +
-                "FECHA_PROCESAMIENTO TIMESTAMP)";
+                "FECHA_PROCESAMIENTO TIMESTAMP, " +
+                "CONTENIDO BLOB)";
 
         try (Connection conexion = DriverManager.getConnection(URL_BD, USUARIO, CLAVE);
              PreparedStatement stmt = conexion.prepareStatement(sql)) {
@@ -45,7 +50,7 @@ public class PersistirEnBaseDeDatos implements Filtro {
     @Override
     public File procesar(String ruta) {
         if (ruta == null || ruta.isBlank()) {
-            System.out.println("La ruta del directorio no puede estar vacía.");
+            System.err.println("La ruta del directorio no puede estar vacía.");
             return null;
         }
         return procesar(new File(ruta));
@@ -55,7 +60,7 @@ public class PersistirEnBaseDeDatos implements Filtro {
     public File procesar(File directorio) {
 
         if (directorio == null || !directorio.exists() || !directorio.isDirectory()) {
-            System.out.println("El directorio no existe o no es válido.");
+            System.err.println("El directorio no existe o no es válido.");
             return null;
         }
 
@@ -65,7 +70,7 @@ public class PersistirEnBaseDeDatos implements Filtro {
         List<String> procesados = new ArrayList<>();
 
         if (archivos.isEmpty()) {
-            System.out.println("No se encontraron archivos en el directorio.");
+            System.err.println("No se encontraron archivos en el directorio.");
         } else {
             for (File archivo : archivos) {
                 if (persistirArchivo(archivo)) {
@@ -73,6 +78,10 @@ public class PersistirEnBaseDeDatos implements Filtro {
                 }
             }
         }
+
+        // Verifica la persistencia recuperando los archivos guardados como bytes
+        // y reconstruyéndolos en la carpeta de descargados.
+        descargarArchivosDesdeBD();
 
         return generarListado(directorio, procesados);
     }
@@ -93,27 +102,76 @@ public class PersistirEnBaseDeDatos implements Filtro {
         }
     }
 
+    /**
+     * Guarda el archivo completo (convertido a bytes) dentro de la base de datos,
+     * no solo su ruta.
+     */
     private boolean persistirArchivo(File archivo) {
 
         String sql = "INSERT INTO ARCHIVOS_PROCESADOS " +
-                "(NOMBRE, RUTA_ABSOLUTA, TAMANO_BYTES, FECHA_PROCESAMIENTO) " +
-                "VALUES (?, ?, ?, ?)";
+                "(NOMBRE, RUTA_ABSOLUTA, TAMANO_BYTES, FECHA_PROCESAMIENTO, CONTENIDO) " +
+                "VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conexion = DriverManager.getConnection(URL_BD, USUARIO, CLAVE);
              PreparedStatement stmt = conexion.prepareStatement(sql)) {
+
+            byte[] contenido = Files.readAllBytes(archivo.toPath());
 
             stmt.setString(1, archivo.getName());
             stmt.setString(2, archivo.getAbsolutePath());
             stmt.setLong(3, archivo.length());
             stmt.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
+            stmt.setBytes(5, contenido);
 
             stmt.executeUpdate();
 
             return true;
 
-        } catch (SQLException e) {
-            System.out.println("Error al persistir el archivo " + archivo.getName() + ": " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Error al leer el archivo " + archivo.getName() + ": " + e.getMessage());
             return false;
+        } catch (SQLException e) {
+            System.err.println("Error al persistir el archivo " + archivo.getName() + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Recupera todos los archivos guardados en la base de datos (sus bytes)
+     * y los reconstruye físicamente en la carpeta de descargados.
+     */
+    private void descargarArchivosDesdeBD() {
+
+        File carpetaDescargados = new File(CARPETA_DESCARGADOS);
+
+        if (!carpetaDescargados.exists() && !carpetaDescargados.mkdirs()) {
+            System.err.println("No se pudo crear la carpeta de descargados: " + carpetaDescargados.getAbsolutePath());
+            return;
+        }
+
+        String sql = "SELECT NOMBRE, CONTENIDO FROM ARCHIVOS_PROCESADOS";
+
+        try (Connection conexion = DriverManager.getConnection(URL_BD, USUARIO, CLAVE);
+             PreparedStatement stmt = conexion.prepareStatement(sql);
+             ResultSet resultado = stmt.executeQuery()) {
+
+            while (resultado.next()) {
+                String nombre = resultado.getString("NOMBRE");
+                byte[] contenido = resultado.getBytes("CONTENIDO");
+
+                if (contenido == null) {
+                    continue;
+                }
+
+                File archivoDestino = new File(carpetaDescargados, nombre);
+
+                try (FileOutputStream salida = new FileOutputStream(archivoDestino)) {
+                    salida.write(contenido);
+                }
+            }
+
+        } catch (SQLException | IOException e) {
+            System.err.println("Error al recuperar archivos desde la base de datos: " + e.getMessage());
         }
     }
 
@@ -133,11 +191,11 @@ public class PersistirEnBaseDeDatos implements Filtro {
                 }
             }
 
-            System.out.println("Listado generado correctamente: " + archivoSalida.getAbsolutePath());
+            System.err.println("Listado generado correctamente: " + archivoSalida.getAbsolutePath());
             return archivoSalida;
 
         } catch (IOException e) {
-            System.out.println("Error al crear el archivo de listado: " + e.getMessage());
+            System.err.println("Error al crear el archivo de listado: " + e.getMessage());
             return null;
         }
     }
