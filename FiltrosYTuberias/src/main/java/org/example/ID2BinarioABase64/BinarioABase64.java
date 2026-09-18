@@ -92,45 +92,5 @@ public class BinarioABase64 implements Filtro {
             return null;
         }
     }
-
-    private String detectarExtension(byte[] datos) {
-        if (datos.length >= 4) {
-            // PDF: %PDF
-            if (datos[0] == 0x25 &&
-                    datos[1] == 0x50 &&
-                    datos[2] == 0x44 &&
-                    datos[3] == 0x46) {
-                return ".pdf";
-            }
-            // JPG
-            if ((datos[0] & 0xFF) == 0xFF &&
-                    (datos[1] & 0xFF) == 0xD8 &&
-                    (datos[2] & 0xFF) == 0xFF) {
-                return ".jpg";
-            }
-            // PNG
-            if ((datos[0] & 0xFF) == 0x89 &&
-                    datos[1] == 0x50 &&
-                    datos[2] == 0x4E &&
-                    datos[3] == 0x47) {
-                return ".png";
-            }
-            // GIF
-            if (datos[0] == 'G' &&
-                    datos[1] == 'I' &&
-                    datos[2] == 'F' &&
-                    datos[3] == '8') {
-                return ".gif";
-            }
-            // ZIP
-            if (datos[0] == 0x50 &&
-                    datos[1] == 0x4B &&
-                    datos[2] == 0x03 &&
-                    datos[3] == 0x04) {
-                return ".zip";
-            }
-        }
-
-        return ".bin";
-    }
+    
 }
