@@ -3,13 +3,13 @@ package org.example.ID4EncriptarTextoSHA256;
 import org.example.interfaz.Filtro;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public class EncriptarTextoSHA256 implements Filtro {
+
+    private final CalculadorSHA256 calculador = new CalculadorSHA256();
+    private final EscritorHash escritor = new EscritorHash();
 
     @Override
     public File procesar(String ruta) {
@@ -62,21 +62,8 @@ public class EncriptarTextoSHA256 implements Filtro {
         }
 
         try {
-            byte[] contenido = Files.readAllBytes(archivo.toPath());
-
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(contenido);
-
-            String hashHexadecimal = convertirAHexadecimal(hashBytes);
-
-            File archivoSalida = new File(
-                    archivo.getParent(),
-                    archivo.getName() + ".sha256.txt"
-            );
-
-            try (FileWriter writer = new FileWriter(archivoSalida)) {
-                writer.write(hashHexadecimal);
-            }
+            String hash = calculador.calcular(archivo);
+            File archivoSalida = escritor.guardar(archivo, hash);
 
             System.err.println("Hash generado: " + archivoSalida.getAbsolutePath());
 
@@ -89,14 +76,6 @@ public class EncriptarTextoSHA256 implements Filtro {
             System.err.println("No se encontró el algoritmo SHA-256.");
             return null;
         }
-    }
-
-    private String convertirAHexadecimal(byte[] bytes) {
-        StringBuilder builder = new StringBuilder();
-        for (byte b : bytes) {
-            builder.append(String.format("%02x", b));
-        }
-        return builder.toString();
     }
 
     @Override
